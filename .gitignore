@@ -27,3 +27,6 @@ local-script-check.js
 # 実行中データと履歴は追跡しない
 logs/
 runtime/
+
+.vercel/
+public/
