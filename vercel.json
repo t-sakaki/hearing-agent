@@ -6,7 +6,7 @@
   "functions": {
     "api/index.mjs": {
       "maxDuration": 60,
-      "includeFiles": "{hanron*.html,hanron*.css,data/sample_case.md,data/prepared_sources.json,scripts/theater_tts.py}"
+      "includeFiles": "{hanron*.html,hanron*.css,hanron*.js,hanron*.mjs,data/sample_case.md,data/prepared_sources.json,scripts/theater_tts.py}"
     }
   },
   "rewrites": [
