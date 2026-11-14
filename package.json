@@ -1,0 +1,10 @@
+{
+  "name": "hanron-agent",
+  "private": true,
+  "scripts": {
+    "start": "node hanron-server.mjs",
+    "check": "node --check hanron-server.mjs && node --check hanron-app.js && node --check hanron-core.mjs && node --check hanron-import.mjs && node --check hanron-stage.js && node --check hanron-theater-engine.mjs && node --check hanron-google-tts.mjs",
+    "test": "node --test scripts/test-core-demo.mjs scripts/test-source-priority.mjs scripts/test-prepared-sources.mjs scripts/test-theater.mjs scripts/test-google-tts.mjs"
+  },
+  "type": "module"
+}

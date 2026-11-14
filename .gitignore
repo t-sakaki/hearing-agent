@@ -1,0 +1,29 @@
+# hearing-agent
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+*.log
+logs/*.log
+logs/*.json
+!logs/.gitkeep
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# M3 output
+output/
+
+# M7 mic recordings
+data/mic/*.wav
+
+# 実案件・バックアップは追跡しない
+docs/agentforge/
+backups/
+slides-build/
+local-script-check.js
+
+# 実行中データと履歴は追跡しない
+logs/
+runtime/

@@ -1,0 +1,115 @@
+[
+  {
+    "id": "P1",
+    "title": "最高裁第三小法廷 令和7年6月3日判決",
+    "kind": "判例・判決本文",
+    "topics": [
+      "partial"
+    ],
+    "url": "https://www.courts.go.jp/assets/hanrei/hanrei-pdf-94152.pdf",
+    "locator": "PDF 5頁・第3の2（多数意見）",
+    "page": 5,
+    "summary": "表形式の各欄を常に一体として判断すればよいとはせず、当該事案では小項目の有無等を明らかにして、合理的に区切った範囲ごとの判断を求めた。",
+    "caution": "情報公開法の取消訴訟の判断。存否応答拒否を当然に否定する判決ではない。安城市条例への適用は別途検討。",
+    "checked": "2026-11-14",
+    "review": "関連箇所の本文確認済み",
+    "cacheFile": "prepared-P1.pdf"
+  },
+  {
+    "id": "P2",
+    "title": "横浜市 審査会答申第2708号・第2709号の公表資料",
+    "kind": "答申の要旨を掲載した広報資料",
+    "topics": [
+      "existence"
+    ],
+    "url": "https://www.city.yokohama.lg.jp/city-info/koho-kocho/press/shimin/2021/0317toshin2708-2709.files/kisyahappyou2708-2709.pdf",
+    "locator": "PDF 2頁「存否応答拒否について」",
+    "page": 2,
+    "summary": "存否の回答で一定の事実の有無が公になり、その事実に非開示事由に当たるものが含まれるという二つの要件を整理。公表資料の日付は令和4年3月17日。",
+    "caution": "答申全文ではなく要旨。結論は原処分妥当であり、請求人に有利な結論の事例として扱わない。適用条例と事実関係の違いを確認。",
+    "checked": "2026-11-14",
+    "review": "関連箇所の本文確認済み",
+    "cacheFile": "prepared-P2.pdf"
+  },
+  {
+    "id": "P3",
+    "title": "愛知県 行政文書の開示決定等に係る審査基準",
+    "kind": "県の審査基準",
+    "topics": [
+      "existence",
+      "partial"
+    ],
+    "url": "https://www.pref.aichi.jp/uploaded/life/638362_2941559_misc.pdf",
+    "locator": "PDF 17頁・部分開示、18頁・存否に関する判断基準",
+    "page": 18,
+    "summary": "部分開示では区分・分離の容易性等を扱い、存否応答拒否では存否自体が保護対象に当たる場合を説明。文書が不存在の場合にも適用がある点を示す。",
+    "caution": "愛知県情報公開条例の基準であり、安城市を直接拘束する基準ではない。安城市条例との文言差を確認。",
+    "checked": "2026-11-14",
+    "review": "関連箇所の本文確認済み",
+    "cacheFile": "prepared-P3.pdf"
+  },
+  {
+    "id": "P4",
+    "title": "文部科学省 行政文書の開示決定等に係る審査基準",
+    "kind": "国の審査基準",
+    "topics": [
+      "existence",
+      "reasons",
+      "partial"
+    ],
+    "url": "https://www.mext.go.jp/b_menu/koukai/kijyun/kijyun.htm",
+    "locator": "第5（部分開示）、第7の1・2（存否と理由提示）",
+    "summary": "存否応答拒否でも、どの不開示情報が明らかになるかを具体的に説明する必要性を示す。部分開示の判断単位や分離の説明もある。",
+    "caution": "国の情報公開法に基づく省の基準。安城市条例の適用とは分け、参考資料として扱う。",
+    "checked": "2026-11-14",
+    "review": "関連箇所の本文確認済み"
+  },
+  {
+    "id": "P5",
+    "title": "安城市 情報公開制度の案内",
+    "kind": "市の制度案内",
+    "topics": [
+      "reasons",
+      "existence",
+      "partial"
+    ],
+    "url": "https://www.city.anjo.aichi.jp/shisei/johokokaiseido.html",
+    "locator": "「請求できる文書」「請求できる人」",
+    "summary": "情報公開制度の対象文書と請求手続の公式案内。誰でも請求できる制度であることを確認する入口。",
+    "caution": "条例本文ではない。第7条・第8条・第10条・第14条の正文の代用にはしない。",
+    "checked": "2026-11-14",
+    "review": "制度案内の本文確認済み"
+  },
+  {
+    "id": "P6",
+    "title": "安城市例規集への公式案内",
+    "kind": "条文確認の入口",
+    "topics": [
+      "reasons",
+      "existence",
+      "partial"
+    ],
+    "url": "https://www.city.anjo.aichi.jp/shisei/reiki.html",
+    "locator": "安城市例規集の外部リンク",
+    "summary": "市公式ページから例規集への案内を確認。条例の現行条文と処分時点の条文を照合するための入口。",
+    "caution": "外部例規集は取得時に403となり、情報公開条例の条文本文は未確認。確認済みの条例として引用しない。",
+    "checked": "2026-11-14",
+    "review": "入口確認のみ・条文未確認"
+  },
+  {
+    "id": "P7",
+    "title": "総務省 裁決・答申データベースの入口",
+    "kind": "利用者指定の検索入口",
+    "topics": [
+      "reasons",
+      "existence",
+      "partial"
+    ],
+    "url": "https://fufukudb.search.soumu.go.jp/koukai/Main",
+    "locator": "個別資料を検索して確認する",
+    "summary": "追加の裁決・答申を探すために利用者が指定した入口。",
+    "caution": "この作業環境では本文未取得。個別の出典として引用しない。",
+    "checked": "2026-11-14",
+    "review": "本文未確認・検索入口"
+  }
+]

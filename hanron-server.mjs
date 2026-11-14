@@ -1,0 +1,35 @@
+import {synthesizeGoogle} from './hanron-google-tts.mjs';
+import {spawn} from 'node:child_process';
+import {runTheater} from './hanron-theater-engine.mjs';
+import http from 'node:http';
+import {readFile,stat} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {resolve} from 'node:path';
+import {searchSources} from './hanron-core.mjs';
+export async function loadCase(){const md=await readFile(new URL('data/sample_case.md',import.meta.url),'utf8');const match=md.match(/```json\s*([\s\S]*?)```/);if(!match)throw Error('サンプルの構造化データがありません');const c=JSON.parse(match[1]);if(!c.issues?.length||!c.timeline?.length||!c.sources?.length)throw Error('サンプルが不完全です');return c;}
+export async function preparedSources(){const items=JSON.parse(await readFile(new URL('data/prepared_sources.json',import.meta.url),'utf8'));return Promise.all(items.map(async item=>{let offlineUrl=null;if(item.cacheFile&&/^prepared-P[0-9]+\.pdf$/.test(item.cacheFile)){try{const info=await stat(new URL('runtime/'+item.cacheFile,import.meta.url));if(info.size>0)offlineUrl='/api/prepared-file/'+item.id;}catch{}}return {...item,offlineUrl};}));}
+const files={'/theater':['hanron-stage.html','text/html'],'/hanron-stage.js':['hanron-stage.js','text/javascript'],'/hanron-stage.css':['hanron-stage.css','text/css'],'/hanron-import.mjs':['hanron-import.mjs','text/javascript'],'/':['hanron.html','text/html'],'/hanron-app.js':['hanron-app.js','text/javascript'],'/hanron-core.mjs':['hanron-core.mjs','text/javascript'],'/hanron.css':['hanron.css','text/css']};
+export function createServer({theater=process.argv.includes('--theater')}={}){return http.createServer(async(req,res)=>{const send=(status,data)=>{res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(data));};try{const u=new URL(req.url,'http://localhost');if(u.pathname==='/theater'&&!theater)return send(404,{error:'劇場は--theaterで起動した場合だけ利用できます。'});
+if(req.method==='POST'&&u.pathname.startsWith('/api/theater/')){
+ if(!theater)return send(404,{error:'劇場モードは無効です。'});
+ if(req.headers['sec-fetch-site']==='cross-site'||(req.headers.origin&&req.headers.origin!=='http://'+req.headers.host))return send(403,{error:'他サイトからの呼出しは受け付けません。'});
+ let raw='';for await(const chunk of req){raw+=chunk;if(Buffer.byteLength(raw)>12000)return send(413,{error:'入力が長すぎます。'});}
+ let data;try{data=JSON.parse(raw);}catch{return send(400,{error:'入力を確認してください。'});}
+ if(u.pathname==='/api/theater/run'){
+  if(typeof data.statement!=='string'||!data.statement.trim())return send(400,{error:'架空の発言を入力してください。'});
+  const controller=new AbortController();res.on('close',()=>controller.abort());res.writeHead(200,{'Content-Type':'application/x-ndjson; charset=utf-8','Cache-Control':'no-store'});
+  const emit=e=>{if(!res.destroyed)res.write(JSON.stringify(e)+'\n');};
+  const result=await runTheater({statement:data.statement,useLlm:data.useLlm!==false,offline:data.offline===true,language:data.language==='en'?'en':'ja',citizenFirst:data.citizenFirst==='female'?'female':'male'},emit,{signal:controller.signal,caseData:await loadCase(),prepared:await preparedSources()});
+  if(!res.destroyed){emit({type:result.stopped?'stopped':'complete',...result});res.end();}return;
+ }
+ if(u.pathname==='/api/theater/voice'){
+  if(!['office','male','female','assistant'].includes(data.role)||typeof data.text!=='string')return send(400,{error:'音声入力を確認してください。'});
+  const provider=data.provider||'auto';if(provider==='browser')return send(200,{error:'端末音声を使用します。'});
+  const voiceController=new AbortController();res.on('close',()=>voiceController.abort());
+  if(provider!=='edge'&&(process.env.GEMINI_TTS_API_KEY||process.env.GEMINI_API_KEY)){try{return send(200,await synthesizeGoogle({role:data.role,text:data.text,language:data.language==='en'?'en':'ja',assistantVoice:data.assistantVoice,signal:voiceController.signal}));}catch{if(voiceController.signal.aborted)return;}}
+  const child=spawn(process.env.HEARING_PYTHON||(process.platform==='win32'?'python':'python3'),['scripts/theater_tts.py'],{cwd:new URL('.',import.meta.url),env:{...process.env,PYTHONIOENCODING:'utf-8'},stdio:['pipe','pipe','pipe']});let out='',done=false;const finish=value=>{if(done)return;done=true;clearTimeout(timer);if(!res.destroyed)send(200,value);};const timer=setTimeout(()=>{child.kill();finish({error:'音声生成の時間切れです。'});},14000);res.on('close',()=>{if(!done){child.kill();done=true;clearTimeout(timer);}});child.stdout.on('data',b=>{out+=b;if(out.length>3000000){child.kill();finish({error:'音声応答が長すぎます。'});}});child.stderr.on('data',()=>{});child.on('error',()=>finish({error:'音声実行環境を確認してください。'}));child.stdin.on('error',()=>{});child.on('close',()=>{try{finish(JSON.parse(out));}catch{finish({error:'音声を利用できません。'});}});child.stdin.end(JSON.stringify({role:data.role,text:data.text.slice(0,500),assistantVoice:data.assistantVoice,language:data.language==='en'?'en':'ja'}));return;
+ }
+ return send(404,{error:'対象がありません。'});
+}
+if(req.method!=='GET')return send(405,{error:'このデモは読み取り専用です。'});if(u.pathname==='/api/prepared-sources')return send(200,await preparedSources());if(u.pathname.startsWith('/api/prepared-file/')){const id=u.pathname.split('/').pop();const items=await preparedSources();const item=items.find(i=>i.id===id&&i.offlineUrl);if(!item)return send(404,{error:'原文は未保存です。要点と公式URLから確認できます。'});const bytes=await readFile(new URL('runtime/'+item.cacheFile,import.meta.url));if(bytes.subarray(0,5).toString()!=='%PDF-')return send(500,{error:'PDFを確認できません。'});res.writeHead(200,{'Content-Type':'application/pdf','Content-Disposition':'inline; filename="'+item.cacheFile+'"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});return res.end(bytes);}if(u.pathname==='/api/case')return send(200,await loadCase());if(u.pathname==='/api/search'){const c=await loadCase();const base=c.issues.find(i=>i.id===u.searchParams.get('issue'))||c.issues[0];const topic=u.searchParams.get('topic');const issue=['partial','reasons','existence'].includes(topic)?{...base,topic}:base;return send(200,await searchSources(c,issue,{offline:u.searchParams.get('offline')==='true',key:process.env.TAVILY_API_KEY||'',jurisdiction:u.searchParams.get('jurisdiction')||'general'}));}const f=files[u.pathname];if(!f)return send(404,{error:'対象がありません。'});res.writeHead(200,{'Content-Type':f[1]+'; charset=utf-8','Cache-Control':'no-store'});res.end(await readFile(new URL(f[0],import.meta.url)));}catch{send(500,{error:'サンプルを読み込めません。再読み込みしてください。'});}});}
+if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){const port=Number(process.env.PORT||3030);createServer().listen(port,'127.0.0.1',()=>console.log('陳述パートナー http://127.0.0.1:'+port));}
