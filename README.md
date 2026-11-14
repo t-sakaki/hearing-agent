@@ -1,111 +1,111 @@
-# 陳述パートナー / Hanron Agent
+# 反論エージェント / Hanron Agent
 
-行政不服審査請求の口頭意見陳述を支援するツールのハッカソンデモ。今日の最優先は、案件の表示、審理員との想定問答、関連出典の確認を一画面で通すこと。利用者の追加指示により、端末内で実案件ブリーフを読み込む機能を追加した。
+行政不服審査請求の口頭意見陳述に向けて、処分庁の主張に対する反論ドラフトを、出典付きで作成・確認できる補佐AIです。2026年11月20日 14:00、安城市役所での口頭意見陳述での使用を想定して開発しています。
 
-作業場所は `C:\Users\taira\hearing-agent`。ユーザーの許可に基づき既存プロジェクトを更新している。別フォルダーへの複製や改名はしない。作業ブランチは codex/tavily-demo。mainへのmergeと外部公開は行わない。追加の利用者指示により、非公開GitHubへ作業ブランチを反映する。
+Hanron Agent is an assistant AI that drafts sourced rebuttal arguments (反論ドラフト) against the disposal authority's (処分庁) claims, in preparation for an oral statement (口頭意見陳述) at Anjo City Hall on 20 November 2026, 14:00.
 
-## 実案件での利用（最新の追加指示）
+---
 
-画面上部のファイル選択で、手元のブリーフMarkdownを読み込む。第1節の概要、第2節の時系列、第6節の想定問答と「たたき台」を解析し、架空サンプルの代わりに表示する。本文はブラウザーのメモリーだけに保持し、サーバー・Tavily・ファイル保存へ渡さない。実案件本文をコードやデータへ転記しない。
+## 日本語
 
-表示する回答例はブリーフからの抜粋であり、原資料と未確認事項を照合する。フィードバックは語句照合であって法的判断ではない。検索が失敗した場合は読み込んだ手元資料へ戻す。架空の事実と混ぜない。自治体の公開資料検索は「安城市」「愛知県」を選択可能。Tavilyへは固定の公開論点と自治体名だけを送る。
+### 解決する問題
 
-「架空サンプルへ戻す」で実案件資料を画面から閉じる。再読み込みすると資料の再選択が必要。実案件資料には氏名等が含まれることがあるため、画面共有する範囲は本人が確認する。
+市役所から「できません」と言われたとき、弁護士を頼めない多くの市民は、条例や審査基準をその場で読んで根拠を持って言い返すのが難しい。Hanron Agent は、専門家がいなくても、ひとりの市民が根拠を持って言い返せるようにする補佐AIである。
 
-## 起動
+### 動作の流れ
+
+1. **入力** — 処分庁の主張（口頭意見陳述で言われたこと）を文字で入力する
+2. **Tavily検索** — 公式ドメイン（go.jp / lg.jp / 安城市など）に限定して Search / Extract し、出典候補（タイトル・URL・抜粋）を集める。見つからなければ「不明」と出す（作り上げない）
+3. **反論ドラフト** — 手元の案件資料と出典候補から、短い反論案を生成する
+4. **本人承認** — 承認 (approve) / 修正 (edit) / 却下 (reject) のゲートを通す。**承認するまで音は出ない**
+5. **読み上げ** — 承認された文だけを読み上げる
+6. **STOPスイッチ** — いつでも即停止。停止フラグ（`runtime/STOP`）で生成・読み上げを止め、ログは日本時間で残す
+
+### Tavily を使っているファイルと関数（実装済み）
+
+| ファイル | 関数 / 経路 | 役割 |
+|---|---|---|
+| `hanron-core.mjs` | `officialUrl()` / `searchSources()` | ブラウザー・サーバー版デモの出典検索。Tavily Search API を公式ドメイン限定（`include_domains` + `restrict`）で呼び、8秒タイムアウト、結果URLを `officialUrl()` で再検査。キー未設定・失敗・公式結果なしのときはサンプル出典へフォールバック |
+| `hanron-server.mjs` | `GET /api/search` | 上記 `searchSources()` を呼ぶHTTP経路 |
+| `src/tavily_citations.py` | `citations_for_topic()` / `_post()` / `official()` | Search → Extract の2段で公式出典候補と本文抜粋を取得。ドメイン制限・HTTPS検査・失敗時「不明」返し |
+| `src/daytona_citations.py` | `collect_citations()` | 上記をローカル、または Daytona sandbox 内で実行する切替 |
+| `src/rebuttal_pipeline.py` | `prepare()` | STOP確認 → 出典収集（Tavily）→ ドラフト生成 → JSTログ記録までの共通経路 |
+| `scripts/run_tavily_demo.py` / `scripts/test_tavily_pipeline.py` | — | 動作確認・テストスクリプト |
+
+APIキーは環境変数 `TAVILY_API_KEY` からのみ読む。キーの値をコード・ファイル・提出文に書かない。本人の入力文・案件名・手元資料はTavilyへ送らず、公開論点の検索語だけを送る。
+
+### 実行方法
 
 Node.js 22以降。追加パッケージは不要。
+
 ```bash
-cd /mnt/c/Users/taira/hearing-agent
 npm start
 ```
-http://localhost:3030/ を開く。旧サーバーが起動中ならCtrl+Cで止めてから同じシェルで再起動する。
 
-Tavilyのキーがまだ未設定なら、サーバー起動前に次を実行する。すでに同じシェルで設定済みなら再入力不要。
+http://localhost:3030/ を開く。Tavilyキーが未設定のままでも、事前保存済みの公的資料とサンプル出典で動く（外部通信なしのオフライン実演も可能）。
+
+Tavilyキーを使う場合は、サーバー起動前に同じシェルで環境変数 `TAVILY_API_KEY` を設定する（値はファイルに書かない）。
+
+### デモURL
+
+【デモURL】（デプロイURLが確定したら記入。ローカルでは `npm start` で http://localhost:3030/）
+
+リポジトリ: https://github.com/t-sakaki/hearing-agent
+
+### 範囲の明示
+
+- 準備度表示は語句照合に基づく確認項目であり、勝率や法的正しさの点数ではない
+- 出典は候補であり、主張の正しさを証明しない。条例・判例の適用判断は本人が行う
+- 音声合成（読み上げ）は承認後の文に限る。審理の場で声を使うときは、行政不服審査法第31条の補佐人として審理員の許可が前提
+
+---
+
+## English
+
+### The problem it solves
+
+When city hall says "no," most people cannot hire a lawyer or read an ordinance on the spot to answer with sources. Hanron Agent helps a single citizen talk back with evidence, without an expert.
+
+### How it works
+
+1. **Input** — the agency's claim is entered as text
+2. **Tavily search** — Search / Extract restricted to official domains (go.jp / lg.jp / City of Anjo, etc.) collects citation candidates (title, URL, snippet). Nothing found is reported as "unknown," never invented
+3. **Rebuttal draft** — a short draft is generated from the case file and the citation candidates
+4. **Human approval** — an approve / edit / reject gate. **No audio is produced until approval**
+5. **Read aloud** — only the approved text is spoken
+6. **STOP switch** — stops generation and playback at once via a stop flag (`runtime/STOP`); logs are kept in JST
+
+### Files and functions that use Tavily (implemented)
+
+| File | Function / route | Role |
+|---|---|---|
+| `hanron-core.mjs` | `officialUrl()` / `searchSources()` | Source search for the browser/server demo. Calls the Tavily Search API restricted to official domains (`include_domains` + `restrict`), 8-second timeout, re-validates result URLs with `officialUrl()`. Falls back to sample sources when the key is missing, the call fails, or no official result is returned |
+| `hanron-server.mjs` | `GET /api/search` | HTTP route that calls `searchSources()` |
+| `src/tavily_citations.py` | `citations_for_topic()` / `_post()` / `official()` | Two-step Search → Extract for official citation candidates and excerpts. Domain restriction, HTTPS checks, and "unknown" on failure |
+| `src/daytona_citations.py` | `collect_citations()` | Runs the above locally or inside a Daytona sandbox |
+| `src/rebuttal_pipeline.py` | `prepare()` | Common path: STOP check → citation gathering (Tavily) → draft generation → JST logging |
+| `scripts/run_tavily_demo.py` / `scripts/test_tavily_pipeline.py` | — | Demo and test scripts |
+
+The API key is read only from the `TAVILY_API_KEY` environment variable and is never written into code, files, or the submission text. The user's input, case name, and local files are not sent to Tavily — only search terms about public issues.
+
+### How to run
+
+Node.js 22 or later. No extra packages required.
+
 ```bash
-read -rsp "Tavily APIキー: " TAVILY_API_KEY
-echo
-export TAVILY_API_KEY
+npm start
 ```
-キーをコードやファイルに書かない。キーはブラウザーへ送らない。
 
-## 90秒のデモ
+Open http://localhost:3030/. It also works without a Tavily key, using pre-collected public sources and sample citations (an offline demo with no external calls is available). To use Tavily, set the `TAVILY_API_KEY` environment variable in the same shell before starting the server.
 
-1. 架空の星砂市ケースで時系列と双方の主張を確認する。
-2. 「回答例を入力」「回答を確認する」で反論書との対応を表示。準備度が2/4になる。
-3. 「次の争点へ」。一度「分離可能です。必ず開示できます。」と答え、未確認事項の断定を指摘する様子を見せる。
-4. 回答例に修正して確認すると準備度が4/4になる。勝率や法的正しさの点数ではないと説明する。
-5. 「この論点の出典を検索」。タイトル・URL・検索抜粋を確認する。キーなし・失敗・公式結果なしでは、架空の手元資料に切り替わる。
-6. 「最初から」で履歴と準備度を初期化して次の実演へ。
+### Demo URL
 
-「検索もサンプルで実演」を選ぶと、通信を行わずオフラインの出典表示を確認できる。サンプルに架空の公的URLを付けない。
+【Demo URL】(to be filled in once the deployment URL is confirmed; locally, `npm start` serves http://localhost:3030/)
 
-## データと処理
+Repository: https://github.com/t-sakaki/hearing-agent
 
-- data/sample_case.md：架空の案件と反論書。末尾のJSONをサーバーが読み、案件表示・問答・確認項目に使う。実案件ブリーフは読まない。
-- data/case_template.md：別案件用の空テンプレート。今回のデモはサンプルだけを使う。
-- hanron-core.mjs：回答に含まれる語句を反論書の確認項目と照合し、不足点・未確認事項の断定・回答例と資料IDを返す。LLM呼出しや法的自動採点は行わない。意味理解の精度を主張しない。
-- hanron-app.js：争点選択、問答履歴、準備度、検索、通信失敗時の表示。争点・設定変更時に古い検索結果を破棄する。
-- hanron-server.mjs：静的画面、サンプル読込、Tavily検索だけを提供。デモ画面からPythonやDaytonaを起動しない。
-- prompts/：想定問答・論点整理・原稿支援の雛形を保持。今回の安定デモはルール照合を使用する。
+### Scope notes
 
-Tavilyは公開論点に応じた検索語でSearch APIを呼び、go.jp / lg.jpを指定して返却URLも検査。本人の入力文、案件名、ローカル資料を外部へ送らない。検索内容は未確認の候補として扱い、条例・判例等の適用を断定しない。8秒で検索が完了しなければサンプルへ切り替える。
-
-[公式Search API](https://docs.tavily.com/documentation/api-reference/endpoint/search)に基づく実装。実機でのAPI通信はキーを設定した端末で確認する。
-
-## 検証
-```bash
-npm run check
-npm test
-```
-9件の検証でサンプル読込、回答別フィードバック、断定の指摘、キーなし、通信・認証失敗、空結果、公式URL制限、HTTP経路を確認。ブラウザー操作でも回答修正と準備度更新、キーなし出典切替を確認済み。実API疎通はこの実行環境のキー未設定により未確認。
-
-## 今日の範囲
-
-提出17:30 JST、デモ17:40 JST。17:00までに動く状態を確保し、それ以降は見栄えと通し確認だけ。TODO.mdを最新の優先順位とする。
-
-以前の音声処理、即時反論、劇場モード、Daytonaの出典取得コードは保持するが、今回のメイン画面からは呼ばない。Daytonaはコア完成後の文書生成用の保険という最新方針に従い、追加接続しない。古いHACKATHON.md・TAVILY-REPORT.md・DAYTONA-REPORT.md・発表スライドは過去時点の説明を含むため、そのまま最新の実装状態として提出しない。
-
-
-## 追加の出典検索先
-利用者提示の https://fufukudb.search.soumu.go.jp/koukai/Main を根拠資料欄の手動検索入口として追加。Tavilyには同ホストを明示し、取得できた個別資料を優先表示する。検索入口そのものは根拠資料の候補から除外。個別本文の取得や主張との一致は保証せず、確認できなければ手元資料で継続。この作業環境では入口の本文を取得できていない。
-
-
-## 事前調査済み出典
-
-data/prepared_sources.jsonに公的資料の要点・論点・確認場所・留保・確認日を保存。論点選択時に即時表示し、外部検索を待たない。7件を登録し、うち2件は入口・未確認の扱いを明示。最高裁判決と横浜市の公表資料はruntime/へPDF保存済み。原文が保存できていない資料には、その旨を表示する。登録内容は公開資料の要約だけで、実案件の本文を含めない。
-
-出典の絞り込みと固定はブラウザー内だけ。「保存済み原文PDFを開く」は外部通信不要（ローカルサーバーは起動しておく）。「公式原文を開く」は外部サイトへ移動する。追加のTavily検索は別枠で、事前資料を置き換えない。安城市条例の現行・処分時点の本文と個別答申全文の追加確認は未完了。
-
-
-## 劇場デモ（最新の追加指示）
-
-起動：`npm start -- --theater`。`/theater`を開く。既定の通常起動では劇場を無効化する。役所役、男女の市民役、冷静な補佐AIの4役を非同期で動かし、音声は1本のキューで再生する。市民だけがにぎやかに反応し、補佐AIは根拠と未確認点を整理する。利用者の追加指示により、劇場に限り開始後の個別承認を外して自動再生する。実際の審理用に自動発言を追加しない。最大12発言、反応深さ2、LLM呼出し8回、90秒。STOPで通信・キュー・再生を停止する。
-
-LanguageでEnglish / 日本語を選択。初期値は英語。UIは英語併記。速度バーは0.8〜3.0倍、初期値1.7倍。変更は次の発言から反映する。音声ファイルは再生速度を変え、preservesPitchで声の高さの維持を試みる。端末音声の対応はブラウザーによる。
-
-### Google TTSの設定
-
-指定参考プロジェクトcivic-lensのvoice_panel.pyを読み、1話者ずつGemini TTSで合成しPCMをWAVにする方式を採用した。キーは既存のGEMINI_API_KEYを、専用環境変数GEMINI_TTS_API_KEYへシェル内だけで読み込む。値の表示・ファイル転記はしない。
-```bash
-cd /mnt/c/Users/taira/hearing-agent
-source scripts/load_tts_env.sh
-source scripts/load_env.sh
-export HEARING_PYTHON=/home/taira/hearing-agent-venv/bin/python
-npm start -- --theater
-```
-デフォルトの読込元は `/home/taira/civic-lens/.env`。別の場所はCIVIC_TTS_ENV_FILEで指定。GEMINI_TTS_MODELでモデル名を変更可能。参考実装と同じgemini-2.5-flash-preview-ttsを既定にする。
-
-Googleの声：役所Orus、男性市民Puck、女性市民Kore、補佐AIはAlgenib（低めの男性）/ Gacrux（落ち着いた女性）/ Charonから選択。4役の短い英語音声を実APIで生成できたことを確認済み。Google Cloudのクレジット適用や残高は未確認であり、Cloud TTS/Vertexの認証とGemini APIキー方式を同一視しない。Google失敗時は既存Edge TTS、次にブラウザー音声へ戻す。Edgeの4声の利用可否は実機依存。
-
-音声と入力は架空デモ専用。モデルに送信するかは画面のチェックで選択する。Tavilyは公開論点だけを検索し、キーなしでは事前保存した公的資料を表示する。Daytona・Nosanaはこの劇場に入れない。
-
-
-追加確認：補佐AI用Algenib・Gacruxの実音声生成も成功。全発言を日英併記し、音声は選択した言語だけを読む。翻訳を取得できない独自入力は「翻訳未確認」と表示し、内容を補作しない。
-
-### 手元の想定反論集を利用する
-`/hearing` でブリーフを読み込み、「想定する市の反論」から発言を入力できます。回答は短答・詳答を切り替え、根拠と注意を同時に表示します。第6節の各Qに `短答`・`詳答`・`検出語`・`根拠`・`注意` を任意追加できます。従来の `たたき台` だけのブリーフにも対応します。想定発言は予測であり、実際の相手の発言を記録したものではありません。実案件の想定集は別の案件フォルダで管理し、アプリには同梱しません。
-
-### 公開版と実案件の劇場
-劇場で手元の想定問答MDを選ぶと、資料内の質問・短答・詳答・根拠・留保から台本を端末内で組み立てます。市側の台詞は予測です。既定では生成APIへ送らず、実案件の音声も端末のローカル音声だけを使います。Google／Edgeへの送信は専用チェックで明示的に切り替えます。実案件の英訳は未確認のため日本語で再生します。公開用には案件資料を同梱しません。
-Vercel版は同じ画面と文字入力・手元資料読込に対応します。PC内のfaster-whisperはVercelで起動せず、公開版では文字入力を使います。キー未設定時は用意した出典・音声の予備経路で継続します。
+- The readiness indicator is a checklist based on phrase matching, not a score of winning odds or legal correctness
+- Citations are candidates, not proof of a claim; the person makes the legal judgment
+- Speech synthesis covers only approved text. Use of the voice at a hearing is premised on examiner permission for an assistant under Article 31 of the Administrative Complaint Review Act
