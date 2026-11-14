@@ -109,3 +109,6 @@ Repository: https://github.com/t-sakaki/hearing-agent
 - The readiness indicator is a checklist based on phrase matching, not a score of winning odds or legal correctness
 - Citations are candidates, not proof of a claim; the person makes the legal judgment
 - Speech synthesis covers only approved text. Use of the voice at a hearing is premised on examiner permission for an assistant under Article 31 of the Administrative Complaint Review Act
+
+### 発表・提出用PDF
+[英語メイン・日本語併記の提出用PDF（全8枚）](slides/2026-11-14-hearing-agent-en-ja.pdf)。2026年11月14日の発表用。技術構成、4役のオーケストレーション、デモ手順を説明しています。保管場所と注意事項は [発表資料の案内](slides/README.md) を参照してください。

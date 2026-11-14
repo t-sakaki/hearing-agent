@@ -1,0 +1,2 @@
+import {synthesizeGoogle} from '../hanron-google-tts.mjs';
+for(const voice of ['Algenib','Gacrux']){try{const r=await synthesizeGoogle({role:'assistant',assistantVoice:voice,text:'Let us check the evidence and distinguish what remains unconfirmed.',language:'en'});console.log(JSON.stringify({voice:r.voice,status:'ok',bytes:Buffer.from(r.audio,'base64').length}));}catch{console.log(JSON.stringify({voice,status:'failed'}));}}

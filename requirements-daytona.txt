@@ -1,0 +1,2 @@
+# https://app.daytona.io/api 対応。v2 alphaと混用しない。
+daytona==0.231.0

@@ -1,0 +1,3 @@
+import {synthesizeGoogle} from '../hanron-google-tts.mjs';
+import {writeFile} from 'node:fs/promises';
+for(const role of ['office','male','female','assistant']){const started=Date.now();try{const r=await synthesizeGoogle({role,text:'This is an AI character in a fictional demonstration.',language:'en'});const bytes=Buffer.from(r.audio,'base64');await writeFile(new URL('../runtime/google-'+role+'-check.wav',import.meta.url),bytes);console.log(JSON.stringify({role,voice:r.voice,bytes:bytes.length,seconds:(Date.now()-started)/1000,status:'ok'}));}catch{console.log(JSON.stringify({role,status:'failed'}));}}
